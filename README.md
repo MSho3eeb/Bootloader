@@ -1,7 +1,7 @@
-Tiva C Bootloader Demo
+**Tiva C Bootloader Demo**
 This project demonstrates a simple bootloader implementation for the Tiva C series microcontroller. The bootloader allows you to switch between two different applications stored in flash memory by pressing the reset button.
 
-Table of Contents
+**Table of Contents**
 Overview
 Hardware Requirements
 Project Structure
@@ -9,10 +9,10 @@ How It Works
 Getting Started
 
 
-Overview
+**Overview**
 Bootloaders are essential for updating firmware in embedded systems without the need for specialized programming equipment. This project showcases a bootloader for the Tiva C microcontroller, allowing you to load and switch between two different applications stored in flash memory. This can be particularly useful for testing and managing different firmware versions on your device.
 
-Hardware Requirements
+**Hardware Requirements**
 Tiva C series microcontroller (e.g., TM4C123GXL)
 Code Composer Studio or another suitable IDE for flashing and debugging
 Project Structure
