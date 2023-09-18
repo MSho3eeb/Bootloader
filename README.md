@@ -1,4 +1,5 @@
 **Tiva C Bootloader Demo**
+
 This project demonstrates a simple bootloader implementation for the Tiva C series microcontroller. The bootloader allows you to switch between two different applications stored in flash memory by pressing the reset button.
 
 **Table of Contents**
