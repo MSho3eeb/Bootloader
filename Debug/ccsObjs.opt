@@ -1,5 +1,7 @@
 "./main.obj"
 "./tm4c123gh6pm_startup_ccs.obj"
+"./Reciever/rx.obj"
+"./Sender/tx.obj"
 "C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/ccs/Debug/driverlib.lib"
 "../tm4c123gh6pm.cmd"
 -llibc.a

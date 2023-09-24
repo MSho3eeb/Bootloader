@@ -1,7 +1,7 @@
 import serial
 import time
 
-serial_port = 'COM5'
+serial_port = 'COM10'
 baud_rate = 115200
 
 try:
@@ -31,7 +31,7 @@ try:
             ser.write(data_to_send)
             #print(data_to_send)
             print(f"***********************/// {line} sent ///***********************")
-            time.sleep(0.03)
+            time.sleep(0.01)
             
     data_to_send = int("0xaa", 16).to_bytes(1, byteorder='little')
     ser.write(data_to_send)

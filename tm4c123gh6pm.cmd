@@ -7,10 +7,6 @@
  *****************************************************************************/
 
 --retain=g_pfnVectors
---retain=RunningAPP
---retain=ReadyAPP1
---retain=ReadyAPP2
---retain=RunningFlag
 
 MEMORY
 {
@@ -32,11 +28,7 @@ MEMORY
 
 SECTIONS
 {
-	.RunPACK1 : > 0x00000
-    .UpPACK2 : > 0x10000
-    .UpPACK3 : > 0x20000
-    .intvecs:   > 0x00030000
-    .RunFlag :> 0x3FFF8
+    .intvecs:   > 0x00000000
     .text   :   > FLASH
     .const  :   > FLASH
     .cinit  :   > FLASH
