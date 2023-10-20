@@ -18,15 +18,6 @@ volatile bool resetFrame = false;
 
 #if IS_TX != 1
 
-//#pragma DATA_SECTION(RunningAPP, ".RunPACK1")
-//const uint32_t RunningAPP[0x3FFF];
-//#pragma DATA_SECTION(ReadyAPP1, ".UpPACK2")
-//const uint32_t ReadyAPP1[0x4000];
-//#pragma DATA_SECTION(ReadyAPP2, ".UpPACK3")
-//const uint32_t ReadyAPP2[0x4000];
-//#pragma DATA_SECTION(RunningFlag, ".RunFlag")
-//const uint32_t RunningFlag[2];
-
 
 void CANIntHandler(void)
 {
@@ -63,7 +54,8 @@ void CANIntHandler(void)
     else if (ui32Status == 4) /* reset frame */
     {
         CANIntClear(CAN0_BASE, 4);
-        //SysCtlReset();
+        //FlashErase(0x00);
+        SysCtlReset();
         canErrorFlag = false;
     }
     else
@@ -86,13 +78,13 @@ void moveApptoRun(uint32_t* src, uint32_t dst, uint32_t count)
 uint32_t data[3000];
 void RX(void)
 {
-
     tCANMsgObject canMsgStart;
     tCANMsgObject canMsgEnd;
     tCANMsgObject canMsgData;
     tCANMsgObject canMsgReset;
     uint32_t data32bit;
-    uint32_t programToRun = PROGRAM_TO_RUN;
+
+    VTABLE_OFFSET = 0x30000;
 
     SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
@@ -104,6 +96,8 @@ void RX(void)
 
     GPIOPinTypeCAN(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5);
     GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN0);
 
@@ -145,26 +139,17 @@ void RX(void)
     while(!dataStart && (timeOutCounter > 0))
         timeOutCounter--;
 
-    if(programToRun == 1 && !dataStart) /* if the bootloader runs and the last app flashed is in bank1 */
+    if((*(uint32_t*)0x00 != 0xFFFFFFFF) && (!dataStart)) /* if the bootloader runs and the last app flashed */
     {
-        CANMessageGet(CAN0_BASE, 3, &canMsgStart, 0);
-        VTABLE_OFFSET |= ADDRESS_BANK_1;
 
-        __asm(" mov r0, #0x00010000\n");
-        __asm(" ldr r1, [r0, #4]");
-        __asm(" bx r1\n");
     }
-    else if(programToRun == 2 && !dataStart) /* if the bootloader runs and the last app flashed is in bank2 */
+    else /* if the bootloader runs and there is no apps*/
     {
-        CANMessageGet(CAN0_BASE, 3, &canMsgStart, 0);
-        VTABLE_OFFSET |= ADDRESS_BANK_2;
+        uint32_t* resetAdd = (uint32_t*)0x30004;
+        uint32_t reset = *resetAdd;
 
-        __asm(" mov r0, #0x00020000\n");
-        __asm(" ldr r1, [r0, #4]");
-        __asm(" bx r1\n");
-    }
-    else /* if the bootloader runs and there is no apps in bank1 or bank2 or there is data incoming*/
-    {
+        FlashErase(0x04);
+        FlashProgram(&reset,0x04, 4);
         canMsgStart.pui8MsgData = (uint8_t *)&flashToBank;
         while(!dataStart);
         CANMessageGet(CAN0_BASE, 3, &canMsgStart, 0);
@@ -178,60 +163,84 @@ void RX(void)
                 SysCtlDelay(100);
                 CANMessageGet(CAN0_BASE, 1, &canMsgData, 0);
                 data[dataReceivedLength - 1] = data32bit;
-                if(data32bit == 0X20000200){
-                    GPIOPinWrite(GPIO_PORTF_BASE, (GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3), (GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3));
-                }
                 dataFrameReceived = 0;
             }
         }
         GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
 
         data[55] = (uint32_t)&CANIntHandler;
+        uint32_t* resetPtr = (uint32_t*) (0x00030004);
+        data[7] = data[1];
+        data[1] = *resetPtr;
+        data[0] = 0x20000200;
 
         switch (flashToBank)
         {
-            case 2:
-            {
-                moveApptoRun(data, ADDRESS_BANK_2, dataReceivedLength * 4);
-                dataReceivedLength = 0;
+        case 2:
+        {
+            moveApptoRun(data, ADDRESS_BANK_2, dataReceivedLength * 4);
 
-                programToRun = 2;
-                FlashErase(ADDRESS_VARS);
-                FlashProgram(&programToRun, ADDRESS_VARS, sizeof(programToRun));
+            moveApptoRun((uint32_t*)ADDRESS_BANK_2, 0x00, dataReceivedLength * 4);
+            dataReceivedLength = 0;
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0);
 
-                VTABLE_OFFSET |= ADDRESS_BANK_2;
+            VTABLE_OFFSET = 0x00;
 
-                __asm(" mov r0, #0x00020000\n");
-                __asm(" ldr r1, [r0, #4]");
-                __asm(" bx r1\n");
+            __asm(" mov r0, #0x00000000\n");
+            __asm(" ldr r1, [r0, #28]");
+            __asm(" bx r1\n");
 
-                break;
-            }
-            case 1:
-            {
-                moveApptoRun(data, ADDRESS_BANK_1, dataReceivedLength * 4);
-                dataReceivedLength = 0;
+            break;
+        }
+        case 1:
+        {
+            moveApptoRun(data, ADDRESS_BANK_1, dataReceivedLength * 4);
 
-                programToRun = 1;
-                FlashErase(ADDRESS_VARS);
-                FlashProgram(&programToRun, ADDRESS_VARS, sizeof(programToRun));
+            moveApptoRun((uint32_t*)ADDRESS_BANK_1, 0x00, dataReceivedLength * 4);
+            dataReceivedLength = 0;
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0);
 
-                VTABLE_OFFSET |= ADDRESS_BANK_1;
+            VTABLE_OFFSET = 0x00;
 
-                __asm(" mov r0, #0x00010000\n");
-                __asm(" ldr r1, [r0, #4]");
-                __asm(" bx r1\n");
+            __asm(" mov r0, #0x00000000\n");
+            __asm(" ldr r1, [r0, #28]");
+            __asm(" bx r1\n");
 
-                break;
-            }
-            default:
-                break;
+            break;
+        }
+        default:
+            break;
         }
 
     }
 
+    GPIO_PORTF_LOCK_R = 0x4C4F434B;
+    GPIO_PORTF_CR_R |= (1<<0) | (1<<4) | (1<<2) | (1<<3);
+    GPIO_PORTF_DIR_R &= (1<<0) | (1<<4);
+    GPIO_PORTF_DIR_R |= (1<<2) | (1<<3);
+    GPIO_PORTF_DEN_R |= (1<<0) | (1<<4) | (1<<2) | (1<<3);
+    GPIO_PORTF_PUR_R |= (1<<0) | (1<<4);
 
-    while(1);
+
+    while(1){
+        if((*(uint32_t*)0x00 != 0xFFFFFFFF) && ((GPIO_PORTF_DATA_R>>4)&1) == 0) /* if the bootloader runs and the last app flashed */
+        {
+            VTABLE_OFFSET = 0x00;
+
+            __asm(" mov r0, #0x00000000\n");
+            __asm(" ldr r1, [r0, #28]");
+            __asm(" bx r1\n");
+        }else if(((GPIO_PORTF_DATA_R>>0)&1) == 0){
+            while(((GPIO_PORTF_DATA_R>>0)&1) == 0);
+            FlashErase(0x00);
+            uint32_t* resetAdd = (uint32_t*)0x30004;
+            uint32_t reset = *resetAdd;
+            FlashErase(0x04);
+            FlashProgram(&reset,0x04, 4);
+
+            SysCtlReset();
+        }
+    }
 
 }
 #endif

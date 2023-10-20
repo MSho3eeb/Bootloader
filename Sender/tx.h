@@ -19,8 +19,12 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
-#include "tx_Cfg.h"
 
+#include "inc/hw_types.h"
+#include "inc/hw_flash.h"
+#include "driverlib/flash.h"
+#include "tx_Cfg.h"
+#include "tm4c123gh6pm.h"
 
 
 

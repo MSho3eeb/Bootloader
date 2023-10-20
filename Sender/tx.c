@@ -21,6 +21,8 @@ volatile bool reset = false;
 
 volatile uint8_t data = 0;
 volatile uint8_t flag = 0;
+volatile uint8_t GetStopVal = 0;
+volatile uint8_t StopVal = 0;
 volatile uint32_t index = 0;
 volatile uint32_t counter = 0;
 const uint32_t img_data[IMG_SIZE];
@@ -101,104 +103,125 @@ void TX(void)
 
     while(flag == 0);
 
-    UARTIntDisable(UART0_BASE, UART_INT_RX);
-    IntDisable(INT_UART0);
-
-    SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    //UARTIntDisable(UART0_BASE, UART_INT_RX);
+    //IntDisable(INT_UART0);
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
 
-    GPIOPinConfigure(GPIO_PB4_CAN0RX);
-    GPIOPinConfigure(GPIO_PB5_CAN0TX);
+    GPIO_PORTF_LOCK_R = 0x4C4F434B;
+    GPIO_PORTF_CR_R |= (1<<0) | (1<<4) | (1<<2) | (1<<3);
+    GPIO_PORTF_DIR_R &= (1<<0) | (1<<4);
+    GPIO_PORTF_DIR_R |= (1<<2) | (1<<3);
+    GPIO_PORTF_DEN_R |= (1<<0) | (1<<4) | (1<<2) | (1<<3);
+    GPIO_PORTF_PUR_R |= (1<<0) | (1<<4);
 
-    GPIOPinTypeCAN(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+    while(1){
+        if(((GPIO_PORTF_DATA_R>>0)&1) == 0){
+            while(((GPIO_PORTF_DATA_R>>0)&1) == 0);
+            SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN0);
+            SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 
-    CANInit(CAN0_BASE);
+            SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+            GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
 
-    CANBitRateSet(CAN0_BASE, SysCtlClockGet(), 1000000);
+            GPIOPinConfigure(GPIO_PB4_CAN0RX);
+            GPIOPinConfigure(GPIO_PB5_CAN0TX);
 
-    CANIntRegister(CAN0_BASE, CANIntHandler); // if using dynamic vectors
+            GPIOPinTypeCAN(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
-    CANIntEnable(CAN0_BASE, CAN_INT_MASTER | CAN_INT_ERROR | CAN_INT_STATUS);
+            SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN0);
 
-    IntEnable(INT_CAN0);
+            CANInit(CAN0_BASE);
 
-    CANEnable(CAN0_BASE);
+            CANBitRateSet(CAN0_BASE, SysCtlClockGet(), 1000000);
 
-    sCANMessage.ui32MsgID = CAN_MSG_ID_DATA;
-    sCANMessage.ui32MsgIDMask = 0;
-    sCANMessage.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
-    sCANMessage.ui32MsgLen = sizeof(pui8MsgData);
-    sCANMessage.pui8MsgData = pui8MsgData;
+            CANIntRegister(CAN0_BASE, CANIntHandler); // if using dynamic vectors
 
-    sCANMessageEnd.ui32MsgID = CAN_MSG_ID_END;
-    sCANMessageEnd.ui32MsgIDMask = 0;
-    sCANMessageEnd.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
-    sCANMessageEnd.ui32MsgLen = 1;
-    sCANMessageEnd.pui8MsgData = pui8MsgData;
+            CANIntEnable(CAN0_BASE, CAN_INT_MASTER | CAN_INT_ERROR | CAN_INT_STATUS);
 
-    sCANMessageStart.ui32MsgID = CAN_MSG_ID_START;
-    sCANMessageStart.ui32MsgIDMask = 0;
-    sCANMessageStart.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
-    sCANMessageStart.ui32MsgLen = 1;
-    sCANMessageStart.pui8MsgData = pui8MsgData;
+            IntEnable(INT_CAN0);
 
-    sCANMessageReset.ui32MsgID = CAN_MSG_ID_RESET;
-    sCANMessageReset.ui32MsgIDMask = 0;
-    sCANMessageReset.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
-    sCANMessageReset.ui32MsgLen = 1;
-    sCANMessageReset.pui8MsgData = pui8MsgData;
+            CANEnable(CAN0_BASE);
 
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+            sCANMessage.ui32MsgID = CAN_MSG_ID_DATA;
+            sCANMessage.ui32MsgIDMask = 0;
+            sCANMessage.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
+            sCANMessage.ui32MsgLen = sizeof(pui8MsgData);
+            sCANMessage.pui8MsgData = pui8MsgData;
 
-    CANMessageSet(CAN0_BASE, 4, &sCANMessageReset, MSG_OBJ_TYPE_TX);
-    while(!reset);
+            sCANMessageEnd.ui32MsgID = CAN_MSG_ID_END;
+            sCANMessageEnd.ui32MsgIDMask = 0;
+            sCANMessageEnd.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
+            sCANMessageEnd.ui32MsgLen = 1;
+            sCANMessageEnd.pui8MsgData = pui8MsgData;
 
-    ui32MsgData = FLASH_ON_BANK_1;                                                  /* change this */
-    CANMessageSet(CAN0_BASE, 3, &sCANMessageStart, MSG_OBJ_TYPE_TX);
-    while(!start);
+            sCANMessageStart.ui32MsgID = CAN_MSG_ID_START;
+            sCANMessageStart.ui32MsgIDMask = 0;
+            sCANMessageStart.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
+            sCANMessageStart.ui32MsgLen = 1;
+            sCANMessageStart.pui8MsgData = pui8MsgData;
 
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
+            sCANMessageReset.ui32MsgID = CAN_MSG_ID_RESET;
+            sCANMessageReset.ui32MsgIDMask = 0;
+            sCANMessageReset.ui32Flags = MSG_OBJ_TX_INT_ENABLE;
+            sCANMessageReset.ui32MsgLen = 1;
+            sCANMessageReset.pui8MsgData = pui8MsgData;
 
-    while(g_ui32MsgCountTX < IMG_SIZE)                                            /* change this */
-    {
-        ui32MsgData = img_data[g_ui32MsgCountTX];                 /* change this */
-        CANMessageSet(CAN0_BASE, 1, &sCANMessage, MSG_OBJ_TYPE_TX);
-        SimpleDelay();
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+
+            CANMessageSet(CAN0_BASE, 4, &sCANMessageReset, MSG_OBJ_TYPE_TX);
+            while(!reset);
+            SysCtlDelay(1600000);
+
+            ui32MsgData = FLASH_ON_BANK_1;                                                  /* change this */
+            CANMessageSet(CAN0_BASE, 3, &sCANMessageStart, MSG_OBJ_TYPE_TX);
+            while(!start);
+
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
+
+            while(g_ui32MsgCountTX < IMG_SIZE)                                            /* change this */
+            {
+                ui32MsgData = img_data[g_ui32MsgCountTX];                 /* change this */
+                CANMessageSet(CAN0_BASE, 1, &sCANMessage, MSG_OBJ_TYPE_TX);
+                SimpleDelay();
+            }
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
+            CANMessageSet(CAN0_BASE, 2, &sCANMessageEnd, MSG_OBJ_TYPE_TX);
+            while(!end);
+
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
+        }else if(((GPIO_PORTF_DATA_R>>4)&1) == 0){
+            while(((GPIO_PORTF_DATA_R>>4)&1) == 0);
+            index = 0;
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
+        }
     }
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
-    CANMessageSet(CAN0_BASE, 2, &sCANMessageEnd, MSG_OBJ_TYPE_TX);
-    while(!end);
-
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
-
-
-    while(1);
 
 }
 
 void recHandler(){
 
     data = UARTCharGet(UART0_BASE);
-    if(data == 0x20){
-        counter++;
-    }
-    if(counter != 445){
-        *(ptr+index) = data;
-        index++;
+
+    if(GetStopVal == 0){
+        StopVal = data;
+        GetStopVal = 1;
     }else{
-        flag = 1;
-    }
-    if(data == 0xaa){
-        flag = 1;
+        if((counter < StopVal-1)){
+            *(ptr+index) = data;
+            index++;
+            if(data == 0xff){
+                counter++;
+            }
+
+        }else{
+            flag = 1;
+        }
+
     }
 
     UARTIntClear(UART0_BASE, 0xFFFF);

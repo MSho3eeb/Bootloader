@@ -23,7 +23,11 @@ main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h
 main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/pin_map.h
 main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/sysctl.h
 main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/uart.h
+main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/inc/hw_types.h
+main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/inc/hw_flash.h
+main.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/flash.h
 main.obj: ../Sender/tx_Cfg.h
+main.obj: E:/C_EUI/CANBootloader/tm4c123gh6pm.h
 
 ../main.c:
 
@@ -71,5 +75,13 @@ C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/sysctl.h:
 
 C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/uart.h:
 
+C:/ti/TivaWare_C_Series-2.2.0.295/inc/hw_types.h:
+
+C:/ti/TivaWare_C_Series-2.2.0.295/inc/hw_flash.h:
+
+C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/flash.h:
+
 ../Sender/tx_Cfg.h:
+
+E:/C_EUI/CANBootloader/tm4c123gh6pm.h:
 
