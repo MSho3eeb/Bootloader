@@ -13,6 +13,7 @@
 volatile uint32_t g_ui32MsgCountTX = 0;
 volatile bool g_bErrFlagTX = false;
 volatile bool start = false;
+volatile bool imgSizeSent = false;
 volatile bool end = false;
 volatile bool reset = false;
 
@@ -24,9 +25,30 @@ volatile uint8_t flag = 0;
 volatile uint8_t GetStopVal = 0;
 volatile uint8_t StopVal = 0;
 volatile uint32_t index = 0;
+volatile uint32_t ImgRecSize = 0;
 volatile uint32_t counter = 0;
-const uint32_t img_data[IMG_SIZE];
-uint8_t *ptr = (uint8_t*)img_data;
+uint32_t img_data[IMG_SIZE];
+volatile uint8_t *ptr = (uint8_t*)img_data;
+
+static uint32_t calculateCRC(uint32_t *pu32data, uint32_t u32length)
+{
+    uint32_t crc = 0xFFFFFFFF;
+    uint32_t i = 0;
+    uint32_t j = 0;
+
+    for(i = 0; i < u32length; i++){
+        crc ^= pu32data[i];
+        for(j = 0; j < 32; j++){
+            if(crc & 0x80000000){
+                crc = (crc << 1) ^ 0xDEADBEAF;
+            }else{
+                crc = crc << 1;
+            }
+        }
+    }
+
+    return crc;
+}
 
 
 void SimpleDelay(void)
@@ -69,8 +91,7 @@ void CANIntHandler(void)
         CANIntClear(CAN0_BASE, 4);
         g_bErrFlagTX = 0;
         reset = true;
-    }
-    else
+    }else
     {
 
     }
@@ -85,6 +106,8 @@ void TX(void)
     tCANMsgObject sCANMessageReset;
     uint32_t ui32MsgData;
     uint8_t *pui8MsgData;
+
+    uint32_t cipherKey = (rand() % 50) + 1;
 
     pui8MsgData = (uint8_t *)&ui32MsgData;
 
@@ -103,8 +126,9 @@ void TX(void)
 
     while(flag == 0);
 
-    //UARTIntDisable(UART0_BASE, UART_INT_RX);
-    //IntDisable(INT_UART0);
+    uint32_t crcVal = calculateCRC(img_data, ImgRecSize);
+    img_data[ImgRecSize] = crcVal;
+    img_data[ImgRecSize+1] = cipherKey;
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
@@ -180,20 +204,21 @@ void TX(void)
             while(!start);
 
             GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
-            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
+            GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2|GPIO_PIN_3, GPIO_PIN_2|GPIO_PIN_3);
 
-            while(g_ui32MsgCountTX < IMG_SIZE)                                            /* change this */
+            while(g_ui32MsgCountTX < ImgRecSize+2)                                            /* change this */
             {
-                ui32MsgData = img_data[g_ui32MsgCountTX];                 /* change this */
+                ui32MsgData = (img_data[g_ui32MsgCountTX] + cipherKey);                 /* change this */
                 CANMessageSet(CAN0_BASE, 1, &sCANMessage, MSG_OBJ_TYPE_TX);
                 SimpleDelay();
             }
+
             GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
             GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
             CANMessageSet(CAN0_BASE, 2, &sCANMessageEnd, MSG_OBJ_TYPE_TX);
             while(!end);
-
             GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3, 0);
+
         }else if(((GPIO_PORTF_DATA_R>>4)&1) == 0){
             while(((GPIO_PORTF_DATA_R>>4)&1) == 0);
             index = 0;
@@ -220,6 +245,7 @@ void recHandler(){
 
         }else{
             flag = 1;
+            ImgRecSize = (index/4) + 1;
         }
 
     }

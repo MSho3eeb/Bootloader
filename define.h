@@ -9,7 +9,7 @@
 #define DEFINE_H_
 
 
-#define IS_TX    1
+#define IS_TX     0
 
 
 

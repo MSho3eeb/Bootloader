@@ -24,6 +24,7 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/flash.h"
 #include "tm4c123gh6pm.h"
+#include <stdlib.h>
 
 
 #include "rx_Cfg.h"

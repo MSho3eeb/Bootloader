@@ -25,6 +25,7 @@
 #include "driverlib/flash.h"
 #include "tx_Cfg.h"
 #include "tm4c123gh6pm.h"
+#include <stdlib.h>
 
 
 

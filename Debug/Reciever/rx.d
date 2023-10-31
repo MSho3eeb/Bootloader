@@ -25,6 +25,7 @@ Reciever/rx.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/pin_map.h
 Reciever/rx.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/sysctl.h
 Reciever/rx.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/flash.h
 Reciever/rx.obj: E:/C_EUI/CANBootloader/tm4c123gh6pm.h
+Reciever/rx.obj: C:/ti/ccs1240/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdlib.h
 Reciever/rx.obj: ../Reciever/rx_Cfg.h
 Reciever/rx.obj: ../define.h
 
@@ -77,6 +78,8 @@ C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/sysctl.h:
 C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/flash.h:
 
 E:/C_EUI/CANBootloader/tm4c123gh6pm.h:
+
+C:/ti/ccs1240/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdlib.h:
 
 ../Reciever/rx_Cfg.h:
 

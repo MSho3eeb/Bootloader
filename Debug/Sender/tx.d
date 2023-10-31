@@ -27,6 +27,7 @@ Sender/tx.obj: C:/ti/TivaWare_C_Series-2.2.0.295/inc/hw_flash.h
 Sender/tx.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/flash.h
 Sender/tx.obj: ../Sender/tx_Cfg.h
 Sender/tx.obj: E:/C_EUI/CANBootloader/tm4c123gh6pm.h
+Sender/tx.obj: C:/ti/ccs1240/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdlib.h
 Sender/tx.obj: ../define.h
 Sender/tx.obj: ../SampleImages/HEX1.h
 Sender/tx.obj: ../SampleImages/HEX2.h
@@ -84,6 +85,8 @@ C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/flash.h:
 ../Sender/tx_Cfg.h:
 
 E:/C_EUI/CANBootloader/tm4c123gh6pm.h:
+
+C:/ti/ccs1240/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdlib.h:
 
 ../define.h:
 

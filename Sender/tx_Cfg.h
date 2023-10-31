@@ -13,6 +13,7 @@
 #define CAN_MSG_ID_START            0x00001001
 #define CAN_MSG_ID_END              0x00001002
 #define CAN_MSG_ID_DATA             0x00001003
+#define CAN_MSG_ID_DATALEN          0x00001004
 
 #define FLASH_ON_BANK_1             1
 #define FLASH_ON_BANK_2             2

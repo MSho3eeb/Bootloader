@@ -13,10 +13,34 @@ volatile uint32_t dataReceivedLength = 0;
 volatile bool dataFrameReceived = false;
 volatile bool dataEnd = false;
 volatile bool dataStart = false;
+volatile bool dataLenHere = false;
 volatile bool canErrorFlag = false;
 volatile bool resetFrame = false;
 
+uint32_t imgSize = 0;
+
 #if IS_TX != 1
+
+
+static uint32_t calculateCRC(uint32_t *pu32data, uint32_t u32length)
+{
+    uint32_t crc = 0xFFFFFFFF;
+    uint32_t i = 0;
+    uint32_t j = 0;
+
+    for(i = 0; i < u32length; i++){
+        crc ^= pu32data[i];
+        for(j = 0; j < 32; j++){
+            if(crc & 0x80000000){
+                crc = (crc << 1) ^ 0xDEADBEAF;
+            }else{
+                crc = crc << 1;
+            }
+        }
+    }
+
+    return crc;
+}
 
 
 void CANIntHandler(void)
@@ -36,7 +60,7 @@ void CANIntHandler(void)
         dataReceivedLength++;
         dataFrameReceived = true;
         canErrorFlag = false;
-        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2 , GPIO_PIN_1);
     }
     else if (ui32Status == 2) /* end frame */
     {
@@ -55,7 +79,10 @@ void CANIntHandler(void)
     {
         CANIntClear(CAN0_BASE, 4);
         //FlashErase(0x00);
-        SysCtlReset();
+        //SysCtlReset();
+        canErrorFlag = false;
+    }else if(ui32Status == 5){
+        dataLenHere = true;
         canErrorFlag = false;
     }
     else
@@ -150,6 +177,7 @@ void RX(void)
 
         FlashErase(0x04);
         FlashProgram(&reset,0x04, 4);
+
         canMsgStart.pui8MsgData = (uint8_t *)&flashToBank;
         while(!dataStart);
         CANMessageGet(CAN0_BASE, 3, &canMsgStart, 0);
@@ -167,6 +195,17 @@ void RX(void)
             }
         }
         GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
+
+        uint32_t keyCipher = (data[dataReceivedLength - 1]/2);
+        uint32_t indexx = 0;
+        for(indexx = 0; indexx < dataReceivedLength - 1; indexx++){
+            data[indexx] -= keyCipher;
+        }
+
+        uint32_t crcVal = calculateCRC(data, dataReceivedLength-2);
+        if(crcVal != data[dataReceivedLength-2]){
+            SysCtlReset();
+        }
 
         data[55] = (uint32_t)&CANIntHandler;
         uint32_t* resetPtr = (uint32_t*) (0x00030004);
